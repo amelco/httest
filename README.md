@@ -11,8 +11,8 @@ Building and testing sample http request file.
 
 ## Features
 - [x] GET
-- [] POST
-- [] PATCH
-- [] DELETE
-- [] Bearer authetication
-- [] Body (json)
+- [ ] POST
+- [ ] PATCH
+- [ ] DELETE
+- [ ] Bearer authetication
+- [ ] Body (json)
