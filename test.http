@@ -1,0 +1,5 @@
+  @base_url=https://dummyjson.com
+@id=1
+
+GET {base_url}/productsa
+GET {base_url}/products/{id}
