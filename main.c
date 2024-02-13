@@ -56,8 +56,13 @@ char* http_get(char* url, int *code) {
 #include <assert.h>
 #define MAX_VAR_QTY 256
 
+typedef enum {
+    HTTP_METHOD_GET,
+    HTTP_METHOD_POST,
+} Method;
+
 typedef struct {
-    char method[10];
+    Method method;
     char url[256];
     char body[1024];
 } Request;
@@ -135,12 +140,12 @@ void parse_requests(Slb_string *file, Request requests[256]) {
            char* rota = strtok(NULL, "\n");
            char* url = fill_variables(rota, var_names, var_values);
            strcpy(requests[total_requests].url, url);
-           strcpy(requests[total_requests].method, "GET");
+           requests[total_requests].method = HTTP_METHOD_GET;
            total_requests++;
        }
        else if (line[0] == 'P' && line[1] == 'O' && line[2] == 'S' && line[3] == 'T') {
            // verificar se tem variaveis e montar a url
-           assert(0 && "POST not implemented yet");
+           assert(0 && "!!POST not implemented yet");
        }
        free(line);
     }
@@ -186,7 +191,7 @@ int main(int argc, char **argv) {
     // make a http request for each request in requests
     for (int i = 0; requests[i].url[0] != '\0'; ++i) {
         int status_code = -1;
-        if (requests[i].method[0] == 'G') {
+        if (requests[i].method == HTTP_METHOD_GET) {
             char *response = http_get(requests[i].url, &status_code);
             printf("GET %s - ", requests[i].url);
             if (status_code != 200) PRINT_INT_RED(status_code);
@@ -198,7 +203,7 @@ int main(int argc, char **argv) {
             free(response);
             continue;
         }
-        if (requests[i].method[0] == 'P') {
+        if (requests[i].method == HTTP_METHOD_POST) {
             assert(0 && "POST not implemented yet");
         }
     }
