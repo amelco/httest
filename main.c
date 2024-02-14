@@ -183,6 +183,7 @@ void parse_requests(Slb_string *file, Request requests[256]) {
             if (hasBody[0] == '{') {
                 char* body = slb_string_get_next(file, '\n');
                 strcpy(requests[total_requests].body, body);
+                // TODO: parse multiline json body
             }
 
             requests[total_requests].method = HTTP_METHOD_POST;
