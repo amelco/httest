@@ -84,6 +84,20 @@ char* slb_string_get_next(Slb_string *string, char delim) {
 }
 
 /*
+ *  Returns next string in Slb_string struct.
+ *  Delimiter is used to determine where string ends.
+ *  Returns NULL if no string is found.
+ *  Returned string must be freed with free().
+ *  It DOS NOT change cursor position.
+ */
+char* slb_string_peek_next(Slb_string *string, char delim) {
+    char* tmp = slb_string_get_next(string, delim);
+    if (tmp == NULL) return NULL;
+    string->cursor_pos -= strlen(tmp) + 1;
+    return tmp;
+}
+
+/*
  *  Frees memory allocated by slb_read_entire_file().
  */
 void slb_string_close(Slb_string* string) {

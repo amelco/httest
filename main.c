@@ -50,6 +50,34 @@ char* http_get(char* url, int *code) {
     }
     return response.memory;
 }
+
+char* http_post(char* url, char* body, int *code) {
+    if (body == NULL) strcpy(body, "{}");
+
+    Response response;
+    response.memory = malloc(1);
+    response.size = 0;
+
+    struct curl_slist *headers = NULL;
+    CURL *curl = curl_easy_init();
+    if (curl) {
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&response);
+        CURLcode res;
+        res = curl_easy_perform(curl);
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, code);
+        if (res != CURLE_OK) {
+            fprintf(stderr, "ERROR: curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        }
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
+    }
+    return response.memory;
+}
 ///// HTTP_REQUEST_IMPLEMENTATION - END /////
 
 ///// HTTP_FILE_PARSING_IMPLEMENTATION - BEGIN /////
@@ -126,28 +154,41 @@ void parse_requests(Slb_string *file, Request requests[256]) {
 
     slb_string_reset_cursor(file);
     for (;;) {
-       char *line = slb_string_get_next(file, '\n');
-       if (line == NULL) break;
+        char *line = slb_string_get_next(file, '\n');
+        if (line == NULL) break;
 
-       slb_cstr_trim(line);
-       if (line[0] == TYPE_VARIABLE) {
-           strcpy(var_names[var_count], strtok(line + 1, "="));
-           strcpy(var_values[var_count], strtok(NULL, "\n"));
-           var_count++;
-       }
-       else if (line[0] == 'G' && line[1] == 'E' && line[2] == 'T') {
-           strtok(line, " ");
-           char* rota = strtok(NULL, "\n");
-           char* url = fill_variables(rota, var_names, var_values);
-           strcpy(requests[total_requests].url, url);
-           requests[total_requests].method = HTTP_METHOD_GET;
-           total_requests++;
-       }
-       else if (line[0] == 'P' && line[1] == 'O' && line[2] == 'S' && line[3] == 'T') {
-           // verificar se tem variaveis e montar a url
-           assert(0 && "!!POST not implemented yet");
-       }
-       free(line);
+        slb_cstr_trim(line);
+        if (line[0] == TYPE_VARIABLE) {
+            strcpy(var_names[var_count], strtok(line + 1, "="));
+            strcpy(var_values[var_count], strtok(NULL, "\n"));
+            var_count++;
+        }
+        else if (line[0] == 'G' && line[1] == 'E' && line[2] == 'T') {
+            strtok(line, " ");
+            char* rota = strtok(NULL, "\n");
+            char* url = fill_variables(rota, var_names, var_values);
+            strcpy(requests[total_requests].url, url);
+            requests[total_requests].method = HTTP_METHOD_GET;
+            total_requests++;
+        }
+        else if (line[0] == 'P' && line[1] == 'O' && line[2] == 'S' && line[3] == 'T') {
+            strtok(line, " ");
+            char* rota = strtok(NULL, "\n");
+            char* url = fill_variables(rota, var_names, var_values);
+            strcpy(requests[total_requests].url, url);
+
+            char* hasBody = slb_string_peek_next(file, '\n');
+            if (hasBody == NULL) break;
+            slb_cstr_trim(hasBody);
+            if (hasBody[0] == '{') {
+                char* body = slb_string_get_next(file, '\n');
+                strcpy(requests[total_requests].body, body);
+            }
+
+            requests[total_requests].method = HTTP_METHOD_POST;
+            total_requests++;
+        }
+        free(line);
     }
 }
 ///// HTTP_FILE_PARSING_IMPLEMENTATION - END /////
@@ -204,7 +245,17 @@ int main(int argc, char **argv) {
             continue;
         }
         if (requests[i].method == HTTP_METHOD_POST) {
-            assert(0 && "POST not implemented yet");
+            char *response = http_post(requests[i].url, requests[i].body, &status_code);
+            printf("POST %s - ", requests[i].url);
+            if (status_code != 200) PRINT_INT_RED(status_code);
+            else printf("%d", status_code);
+            printf("\n");
+            if (verbose) {
+                printf("Body:\n%s\n", requests[i].body);
+                printf("Response:\n%s\n\n", response);
+            }
+            free(response);
+            continue;
         }
     }
 

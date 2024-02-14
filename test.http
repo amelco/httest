@@ -4,9 +4,5 @@
 GET {base_url}/productsa
 GET {base_url}/products/{id}
 
-#POST {base_url}/products
-
-#{
-#    "id": 1,
-#    "name": "Andre Herman"
-#}
+POST {base_url}/products/add
+{ "id": 1, "name": "Andre Herman" }
